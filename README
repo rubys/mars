@@ -1,0 +1,35 @@
+To verify that you have the necessary prereqs installed, execute:
+
+  rake prereqs
+
+Information on the various requirements:
+
+  Addressable:
+    gem install addressable
+
+    For best resuts, also install idn:
+      gem install idn
+
+    To make sure that gems are searched:
+      export RUBYOPT="-rubygems"
+
+  Html5:
+    There was a bug fixed on 2007-12-09 that Mars depends on.  For best
+    results, check out the latest:
+
+      svn checkout http://html5lib.googlecode.com/svn/trunk/ html5lib
+      export RUBYLIB="/path/html5lib/ruby/lib"
+
+  XmlParser:
+    Mars needs a *working* XML parser (REXML version 3.1.6 won't do).
+
+    To determine the version of REXML you have installed:
+      ruby -rrexml/document -e 'p REXML::VERSION'
+
+    For best results (speed, spec compliance), install one of
+      http://www.yoshidam.net/xmlparser_en.txt
+      http://libxml.rubyforge.org/
+
+    The latest REXML can be obtained by
+      svn co http://www.germane-software.com/repos/rexml/trunk/ rexml
+      export RUBYLIB="/path/rexml/src"
