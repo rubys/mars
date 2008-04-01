@@ -112,6 +112,17 @@ module Planet
   include HTML5::HTMLSanitizeModule
   @sanitizer = HTML5::HTMLSanitizer.new ''
   def Planet.sanitize node, fido
+    # cull empty formatting elements.  They can cause FF & Konq to nest badly.
+    # For instance, <i/> causes everything after it to italicized, including other entries.
+    if node.elements.size == 0 && node.text == nil
+      if %w{abbr acronym b big cite code del dfn em i ins kbd s
+            samp small strike strong sub sup tt u var}.include? node.name
+        # If the node has no children and no text, it can only cause trouble.
+        node.remove
+        return
+      end
+    end
+
     node.elements.each {|child| sanitize child, fido}
 
     if node.namespace == 'http://www.w3.org/1999/xhtml'
