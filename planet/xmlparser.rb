@@ -31,7 +31,7 @@ module Planet
           doc = REXML::Document.new source
         end
         bozo = false
-      rescue
+      rescue Exception => e
         # If everything is being bozo'd, enable this to see why.
         # print "PARSE ERROR: #{$!}\n  #{$!.backtrace.join("\n  ")}\n"
 
