@@ -15,4 +15,10 @@ class XmlParserTestCase < Test::Unit::TestCase
     doc = Planet::XmlParser.parse('<e a="&amp;"/>')
     assert_nil doc.to_s.index('&amp;amp;')
   end
+
+  def test_bozo
+    # http://github.com/bronson/mars/commit/567e2f3f459d446f0530bbd4c8acb00dde378420
+    doc = Planet::XmlParser.parse('<e a="&amp;">')
+    assert doc.bozo
+  end
 end
