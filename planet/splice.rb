@@ -1,8 +1,8 @@
 require 'planet/config'
-require 'planet/style'
 require 'planet/xmlparser'
 require 'fileutils'
 require 'time'
+require 'planet/publisher'
 
 module Planet
 
@@ -90,17 +90,6 @@ module Planet
     end
 
     # apply templates
-    config['template_files'].split.each do |template|
-      next unless template =~ /^ .* \/ (.*) \. (\w+)/x
-
-      if $2 != 'xslt'
-        Planet.log.warn "#{$2}: not yet supported"
-      else
-        File.open(File.join(output_dir,$1),'w') do |file|
-          Planet.log.info "Processing template #{template}"
-          file.write Planet::Xslt.process(template, feed)
-        end
-      end
-    end
+    TemplatePublisher.new.publish_feed(config['template_files'], feed)
   end
 end
