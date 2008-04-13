@@ -9,31 +9,33 @@ H_FILES.map! {|name| name.index('.') ? name : name+".xml"}
 H_TESTS = H_FILES.map {|arg| Dir[File.join('test/data/filter',arg)]}
 
 # test cases are in Python syntax, convert to something that eval will accept
-def python2ruby(expr, source)
-  # unicode strings
-  expr.gsub! " u'", " '"
-  expr.gsub! ' u"', ' "'
+class TestCaseConverter
+  def self.python2ruby(expr, source)
+    # unicode strings
+    expr.gsub! " u'", " '"
+    expr.gsub! ' u"', ' "'
 
-  # triple strings
-  expr.gsub! /"""(.*?)"""/, '%q{\1}'
+    # triple strings
+    expr.gsub! /"""(.*?)"""/, '%q{\1}'
 
-  # dict to hash
-  expr.gsub! "': '", "' => '"
+    # dict to hash
+    expr.gsub! "': '", "' => '"
 
-  # const to variable
-  expr.gsub! "Items[", "items["
-  expr.gsub! "Channels[", "channels["
+    # const to variable
+    expr.gsub! "Items[", "items["
+    expr.gsub! "Channels[", "channels["
 
-  # true
-  expr = "true" if expr == "1"
+    # true
+    expr = "true" if expr == "1"
 
-  # differences in XML/URI serializations
-  name = source.split('/').last.split('.').first
-  expr.sub!('&quot;','%22') if name == 'missing_quote_in_attr'
-  expr.sub! '&gt;', '>' if name == 'tag_in_attr'
-  expr.gsub!('"', "\\\\'").gsub!('&quot;','"') if name == 'quote_in_attr'
+    # differences in XML/URI serializations
+    name = source.split('/').last.split('.').first
+    expr.sub!('&quot;','%22') if name == 'missing_quote_in_attr'
+    expr.sub! '&gt;', '>' if name == 'tag_in_attr'
+    expr.gsub!('"', "\\\\'").gsub!('&quot;','"') if name == 'quote_in_attr'
 
-  expr
+    expr
+  end
 end
 
 require 'planet/formatter'
@@ -59,7 +61,7 @@ class HamlTestCase < Test::Unit::TestCase
       case testdata
         # for .xml files
         when /Description:\s*(.*?)\s*Expect:\s*(.*)\s*/
-          desc = python2ruby($2, file)
+          desc = TestCaseConverter.python2ruby($2, file)
           doc = Planet.harvest(file)
           output = HamlFormatter.new.haml_info(doc)
           channels = output['channels']
@@ -67,7 +69,7 @@ class HamlTestCase < Test::Unit::TestCase
 
         # for .ini files... any xml will do
         when /Description:\s*(.*?)\s*; Expect:\s*(.*)\s*/
-          desc = python2ruby($2, file)
+          desc = TestCaseConverter.python2ruby($2, file)
           Planet.config.read file
           doc = Planet.harvest('test/data/filter/haml/new_channel.xml')
           output = HamlFormatter.new.haml_info(doc)
