@@ -71,7 +71,7 @@ class HamlTestCase < Test::Unit::TestCase
         when /Description:\s*(.*?)\s*; Expect:\s*(.*)\s*/
           desc = TestCaseConverter.python2ruby($2, file)
           Planet.config.read file
-          doc = Planet.harvest('test/data/filter/haml/new_channel.xml')
+          doc = Planet.harvest('test/data/filter/haml/id.xml')
           output = HamlFormatter.new.haml_info(doc)
  
           # copy haml hash to environment
