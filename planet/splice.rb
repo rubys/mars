@@ -3,6 +3,7 @@ require 'planet/style'
 require 'planet/xmlparser'
 require 'fileutils'
 require 'time'
+require 'rexml/formatters/default'
 
 module Planet
 
@@ -16,18 +17,28 @@ module Planet
     # produce a minimal feed header (TODO: complete)
     feed = REXML::Document.new('<feed xmlns="http://www.w3.org/2005/Atom"/>')
     feed.root.add_namespace('planet', 'http://planet.intertwingly.net/')
-    id = feed.root.add_element('id')
-    id.text = URI.join(config['link'],'atom.xml').to_s
-    link = feed.root.add_element('link', {'rel'=>'self', 'href'=>id.text})
-    link.attributes['type'] = 'application/atom+xml'
+    feed.root.add_namespace('indexing', 'urn:atom-extension:indexing')
+    feed.root.attributes['indexing:index'] = 'no'
     title = feed.root.add_element('title')
     title.text = config['name'].to_s
     updated = feed.root.add_element('updated')
     updated.text = Time.now.iso8601
+    generator = feed.root.add_element('generator', {'uri' => 'http://github.com/rubys/mars/tree/master'})
+    generator.text = 'Mars'
+    author = feed.root.add_element('author')
+    author_name = author.add_element('name')
+    author_name.text = config['owner_name']    
+    author_email = author.add_element('email')
+    author_email.text = config['owner_email']    
+    id = feed.root.add_element('id')
+    id.text = URI.join(config['link'],'atom.xml').to_s
+    link_self = feed.root.add_element('link', {'rel'=>'self', 'href'=>id.text})
+    link_self.attributes['type'] = 'application/atom+xml'
+    link_alt = feed.root.add_element('link', {'rel' => 'alternate', 'href' => config['link'] })
+    link_alt.attributes['type'] = 'application/xhtml+xml'
 
     # add the latest 'items_per_page' entries to the feed
     entry_cache = File.join(config['cache_directory'],'entry')
-    feed.root.add_text "\n\n"
     Dir.chdir(entry_cache) do
       files = Dir['*'].map {|name| [File.stat(name).mtime.to_i, name]}
 
@@ -54,7 +65,6 @@ module Planet
         updated.attributes['planet:format'] = formatted_time
       rescue
       end
-      feed.root.add_text "\n\n"
     end
 
     # add source information
@@ -80,14 +90,15 @@ module Planet
       Planet.source(sub, source) unless source.has_elements?
 
       feed.root.add source.root
-      feed.root.add_text "\n"
     end
 
-    # output the Atom feed
-    File.open(File.join(output_dir,'atom.xml'),'w') do |file|
-      Planet.log.info 'Producing atom.xml'
-      feed.write(file)
-    end
+# Let's use an Atom xslt template, instead
+#    # output the Atom feed
+#    File.open(File.join(output_dir,'atom.xml'),'w') do |file|
+#      Planet.log.info 'Producing atom.xml'
+#      formatter = REXML::Formatters::Default.new
+#      formatter.write(feed, file)
+#    end
 
     # apply templates
     config['template_files'].split.each do |template|
