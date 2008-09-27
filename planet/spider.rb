@@ -87,6 +87,11 @@ module Planet
         id ||= entry.elements['link[@rel="alternate"]/@href'] rescue nil
         next unless id
 
+        unless /^\w+\:/ =~ id
+          id = 'urn:feed-entry-id:' + id
+          entry.elements['id'].text = id
+        end
+
         # determine output file name for this entry
         entry_file = File.join(entry_cache, Planet.filename(id))
 
