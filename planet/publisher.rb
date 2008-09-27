@@ -18,7 +18,7 @@ class TemplatePublisher
     
       # loop through the listed templates
       template_files.split.each do |template|
-        next unless template =~ /^(.* \. .*) \. (\w+)/x
+        next unless template =~ /([^\/]* \. [^\/]*) \. (\w+)$/x
 
         # skip templates that aren't supported
         unless ALLOWED_TEMPLATES.include?($2) then
