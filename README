@@ -1,3 +1,22 @@
+HAML FOR MARS release 0.4
+
+To run the haml example, execute:
+
+	rake setup
+	rake planet
+
+and point your browser to yourdir/index.html
+
+To play with templates once the cache has been built:
+
+	rake splice
+
+Setup copies in config and .haml templates for the intertwingly theme.
+The various clean tasks remove the extra files. See rake -T
+
+
+Previously on Planet Mars...
+
 To verify that you have the necessary prereqs installed, execute:
 
   rake prereqs

@@ -1,5 +1,6 @@
-module Planet
-  module Xslt
+require 'planet/formatter'
+
+  class XsltFormatter < PlanetFormatter
     begin
       # http://greg.rubyfr.net/pub/packages/ruby-xslt/files/README.html
       require 'xml/libxslt'
@@ -8,7 +9,7 @@ module Planet
       @@processor = :xsltproc
     end
 
-    def Xslt.process stylesheet, doc
+    def process stylesheet, doc
       if @@processor == :libxslt
 
         translate = XML::XSLT.new
@@ -44,4 +45,3 @@ module Planet
     end
 
   end
-end

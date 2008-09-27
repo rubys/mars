@@ -6,7 +6,12 @@ module Planet
     doc = Planet::Transmogrify.parse(open(source))
     doc.attributes['xml:base'] = source
 
-    # augment the document with feed parser attributes
+    Planet.add_attrs(doc)
+  end
+
+  # Augment a document with feed parser attributes
+  def Planet.add_attrs doc
+
     class << doc
       attr_accessor :feed, :entries
     end
@@ -75,7 +80,7 @@ module Planet
   end
 
   class CommonElements < UserDict
-    text_element :id
+    text_element :id, :updated, :published
     alias :guid :id
 
     text_construct :rights
@@ -111,14 +116,6 @@ module Planet
       @node.elements.to_a('contributor').map {|node| Author.new(node)}
     end
 
-    def categories
-      tags.map {|tag| [tag.scheme, tag.term]}
-    end
-
-    def category
-      tags.first.term rescue nil
-    end
-
     def author
       author_detail.to_s
     end
@@ -145,6 +142,24 @@ module Planet
     def generator_detail
       Generator.new(@node.elements['generator'])
     end
+
+    def message
+      element = @node.elements['planet:message']
+      element ? element.texts.map {|t| t.value}.join : nil
+    end
+
+    def name
+      element = @node.elements['planet:name']
+      element ? element.texts.map {|t| t.value}.join : nil
+    end
+    
+    def sources
+      @node.elements.to_a('planet:source').map {|node| Feed.new(node)}
+    end
+    
+    def url
+      links.select {|link| link.rel=='self'}.first.href rescue nil
+    end
   end
 
   class Entry < CommonElements
@@ -154,6 +169,22 @@ module Planet
 
     def content
       @node.elements.to_a('content').map {|node| TextConstruct.new(node)}
+    end
+
+    def enclosure_href
+      enclosures.first.href rescue nil
+    end
+
+    def enclosure_length
+      enclosures.first.length rescue nil
+    end
+
+    def enclosure_type
+      if enclosures.first.is_a?(Planet::Link)
+        return enclosures.first.type
+      else
+        return nil
+      end
     end
 
     def enclosures
@@ -214,6 +245,10 @@ module Planet
       url_norm(@node.xmlbase)
     end
 
+    def language
+      @node.attributes['xml:lang']
+    end
+
   private
 
     # DOM to string
@@ -255,7 +290,11 @@ module Planet
     end
 
     def to_s
-      email ? "#{name} (#{email})" : "#{name}"
+      if name
+        email ? "#{name} (#{email})" : "#{name}"
+      else
+        "#{email}"
+      end
     end
 
     alias :url :uri
