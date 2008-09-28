@@ -1,15 +1,21 @@
 require 'test/unit'
 require 'planet/harvest'
 require 'planet/config'
-require 'planet/hamlformatter'
 
+begin
+  require 'haml'
+  require 'planet/hamlformatter'
+  H_FILES = [ 'haml/*', 'haml/*.ini'] 
+rescue LoadError
+  puts "haml gem not found, skipping #{__FILE__}"
+  H_FILES = [ ]
+end
 
-H_FILES = [ 'haml/*', 'haml/*.ini'] 
 H_FILES.map! {|name| name.index('.') ? name : name+".xml"}
 H_TESTS = H_FILES.map {|arg| Dir[File.join('test/data/filter',arg)]}
 
 # test cases are in Python syntax, convert to something that eval will accept
-def python2ruby(expr, source)
+def haml_python2ruby(expr, source)
   # unicode strings
   expr.gsub! " u'", " '"
   expr.gsub! ' u"', ' "'
@@ -59,7 +65,7 @@ class HamlTestCase < Test::Unit::TestCase
       case testdata
         # for .xml files
         when /Description:\s*(.*?)\s*Expect:\s*(.*)\s*/
-          desc = python2ruby($2, file)
+          desc = haml_python2ruby($2, file)
           doc = Planet.harvest(file)
           output = HamlFormatter.new.haml_info(doc)
           channels = output['channels']
@@ -67,7 +73,7 @@ class HamlTestCase < Test::Unit::TestCase
 
         # for .ini files... any xml will do
         when /Description:\s*(.*?)\s*; Expect:\s*(.*)\s*/
-          desc = python2ruby($2, file)
+          desc = haml_python2ruby($2, file)
           Planet.config.read file
           doc = Planet.harvest('test/data/filter/haml/new_channel.xml')
           output = HamlFormatter.new.haml_info(doc)
@@ -87,5 +93,9 @@ class HamlTestCase < Test::Unit::TestCase
       test_result = eval desc 
       assert_equal true, test_result, message=desc
     end
+  end
+
+  def default_test
+    # eliminate warning if no tests were specified
   end
 end
