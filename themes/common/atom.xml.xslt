@@ -14,18 +14,6 @@
   <!-- strip unknown elements and attributes -->
   <xsl:template match="unknown:*|@unknown:*"/>
 
-  <!-- strip published elements within atom:source -->
-  <xsl:template match="atom:source/atom:published">
-    <xsl:choose>
-      <xsl:when test="../atom:updated"/>
-      <xsl:otherwise>
-        <xsl:text>&#10;</xsl:text>
-        <xsl:text>      </xsl:text>
-        <atom:updated><xsl:value-of select="."/></atom:updated>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-
   <!-- strip blank subtitles -->
   <xsl:template match="atom:subtitle">
     <xsl:if test="./text()">
