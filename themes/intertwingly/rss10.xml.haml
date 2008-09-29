@@ -1,0 +1,30 @@
+!!! XML
+%rdf:rdf{ 'xmlns:rdf' => "http://www.w3.org/1999/02/22-rdf-syntax-ns#",  'xmlns:dc' => "http://purl.org/dc/elements/1.1/",  'xmlns:foaf' => "http://xmlns.com/foaf/0.1/",  'xmlns:content' => "http://purl.org/rss/1.0/modules/content/",  'xmlns' => "http://purl.org/rss/1.0/" }
+  %channel{ 'rdf:about' => "#{link}" }
+    %title
+      = name
+    %link
+      = link
+    %description
+      = name 
+      = "- #{link}"
+    %items
+      %rdf:seq
+        - for item in items
+          %rdf:li{ 'rdf:resource' => "#{item["id"]}" }
+    - for item in items
+      %item{ 'rdf:about' => "#{item["id"]}" }
+        %title
+          = item['channel_name']
+          - if item['title']
+            = ": #{item['title_plain']}"
+        %link
+          = link
+        - if item['content']
+          %content:encoded
+            = item['content']
+        %dc:date
+          = item['date_iso']
+        - if item['author_name']
+          %dc:creator
+            = item['author_name']

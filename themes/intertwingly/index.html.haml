@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+%html{:xmlns => "http://www.w3.org/1999/xhtml"}
+  %head
+    %meta{"http-equiv" => "Content-Type", :content => "text/html;charset=utf-8"}
+    %link{:rel => "stylesheet", :href => "default.css", :type => "text/css"}
+    %title= name
+    %meta{:name => "robots", :content => "noindex,nofollow"}
+    %meta{:name => "generator", :content => "#{generator}"}
+    - if feedtype
+      %link{:rel => "alternate", :href => "#{feed}", :title => "#{name}", :type => "application/#{feedtype}+xml"}
+    %script{ :type => "text/javascript", :src => "personalize.js"}
+
+  %body
+    %h1= name
+
+    #body
+      - for item in items
+        - if item['new_date']
+          %h2
+            %time{ :datetime => "#{item['date_iso']}" }= item['new_date']
+
+        -# TODO add content language to class
+        .news
+          %h3
+            - if item['channel_icon']
+              %img{ :src => "#{item['channel_icon']}"}
+            %a{ :href  => "#{item['channel_link']}", :title => "#{item['channel_name']}" }= item['channel_name']
+            = "-"
+            %a{ :href  => "#{item['link']}", :title => "#{item['title']}" }= item['title']
+          .content= item['content']
+          .permalink
+            -if item['channel_rights']
+              %a{ :title => "#{item['channel_rights']}" }= "&copy;"
+              %a{ :href  => "#{item['link']}" }
+                = "#{item['channel_name']} at "
+                %time{:datetime =>"#{item['updated_iso']}", :title => "GMT"}= item['date']
+            -else
+              %a{ :href  => "#{item['link']}" }
+                = "by #{item['channel_name']} at "
+                %time{:datetime =>"#{item['updated_iso']}", :title => "GMT"}= item['date']
+
+    #sidebar
+      %h2 Info
+      %dl
+        %dt Last updated:
+        %dd
+          %time{:datetime =>"#{date_iso}", :title => "GMT"}= date
+        %dt Powered by:
+        %dd
+          %a{:href =>"http://intertwingly.net/code/venus/"}
+            %img{ :src =>"images/venus.png", :alt => "Venus", :width => "80", :height => "15", :border => "0" }
+
+    #footer
+      %h2 Subscriptions
+      %ul
+        - for source in channels
+          %li
+            %a{ :title => "subscribe", :href  => "#{source['url']}" }
+              %img{ :src =>"images/feed-icon-10x10.png", :alt => "(feed)" }
+            %a{ :href  => "#{source['link']}", :title => "#{source['title_plain']}"  }= source['name']

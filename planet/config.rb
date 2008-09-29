@@ -7,6 +7,13 @@ module Planet
     @@config
   end
 
+  def Planet.predefine_options(planet_hash)
+    planet_hash['name'] = "Unconfigured Planet" unless planet_hash['name'] 
+    planet_hash['link'] = '' unless planet_hash['link'] 
+    planet_hash['date_format'] = "%B %d, %Y %I:%M %p" unless planet_hash['date_format'] 
+    planet_hash['new_date_format'] = "%B %d, %Y" unless planet_hash['new_date_format'] 
+  end
+
   # Configuration parser compatible with the data format supported by Python:
   # http://docs.python.org/lib/module-ConfigParser.html
   class PythonConfigParser < DelegateClass(Hash)
@@ -84,6 +91,8 @@ module Planet
       super(filename)
 
       planet = self['Planet']
+
+      Planet.predefine_options(planet)      
 
       Planet.log_format planet['log_format'] if planet['log_format']
       Planet.log_level  planet['log_level']  if planet['log_level']

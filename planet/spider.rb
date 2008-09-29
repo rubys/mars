@@ -2,6 +2,7 @@ require 'planet/fido'
 require 'planet/transmogrify'
 require 'planet/sift'
 require 'fileutils'
+require 'rexml/formatters/default'
 
 module Planet
 
@@ -46,7 +47,6 @@ module Planet
           Planet.log.error "Not a feed - #{uri}"
           next
         end
-        feed.add_text("\n  ")
       end
 
       # second set of filters: cardinality, sanitization, dates, and uris
@@ -102,6 +102,11 @@ module Planet
         id ||= entry.elements['link[@rel="alternate"]/@href'] rescue nil
         next unless id
 
+        unless /^\w+\:/ =~ id
+          id = 'urn:feed-entry-id:' + id
+          entry.elements['id'].text = id
+        end
+
         # determine output file name for this entry
         entry_file = File.join(entry_cache, Planet.filename(id))
 
@@ -123,7 +128,7 @@ module Planet
         entry.add(source) if not entry.elements['source']
 
         # output the entry, with a timestamp reflecting the update time
-        File.open(entry_file, 'w') { |file| file.write(entry.to_s) }
+        File.open(entry_file, 'w') { |file| REXML::Formatters::Default.new.write(entry, file) }
         updated = Time.parse(updated.text)
         File.utime updated, updated, entry_file
       end
@@ -133,7 +138,7 @@ module Planet
         source.name = 'planet:source'
         root_attrs.each_pair {|name,value| source.attributes[name]=value}
         source_file = File.join(source_cache, Planet.filename(sub))
-        File.open(source_file, 'w') { |file| file.write(source.to_s) }
+        File.open(source_file, 'w') { |file| REXML::Formatters::Default.new.write(source, file) }
       end
     end
   end
