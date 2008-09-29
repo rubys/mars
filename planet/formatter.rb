@@ -1,4 +1,5 @@
 require 'planet/config'
+require 'html5/tokenizer'
 
 class PlanetFormatter
 
@@ -8,7 +9,27 @@ class PlanetFormatter
 
   def plain(value)
     #TODO add HTML stripper
-    return value
+    tokenizer = HTML5::HTMLTokenizer.new(value)
+    line = ""
+    tokenizer.each { |t| 
+#      puts "PLAIN: token, type=#{t[:type]}, data=#{t[:data]}, name=#{t[:name]}\n"
+ 
+                    case t[:type]
+                    when :StartTag, :EndTag, :EmptyTag, :Comment 
+                      next
+                    when :SpaceCharacters
+                      line << t[:data]
+                    when :Characters
+                      line << t[:data]
+                    when :ParseError
+                      puts "PLAIN: parse error, data=#{t[:data]}, name=#{t[:name]}\n"
+                      puts "PLAIN: parse error, value=#{value}\n"
+                      line << value
+                    else
+                      puts "PLAIN: uncaught type #{t[:type]}\n"
+                    end
+                  }
+    return line
   end
   
   def string(value)
@@ -18,14 +39,18 @@ class PlanetFormatter
   
   def planet_date(value)
       df = Planet.config['Planet']['date_format']
-      df = "%B %d, %Y %I:%M %p" unless df
-      return value ? Time.parse(value).gmtime.strftime(df): nil
+      df ||= "%B %d, %Y %I:%M %p"
+      t = value ? Time.parse(value).gmtime.strftime(df): nil
+      t.gsub!('"', '')
+      return t
   end
   
   def new_date(value)
       ndf = Planet.config['Planet']['new_date_format']
-      ndf = "%B %d, %Y %I:%M %p" unless ndf
-      return value ? Time.parse(value).gmtime.strftime(ndf): nil
+      ndf ||= "%B %d, %Y %I:%M %p"
+      t = value ? Time.parse(value).gmtime.strftime(ndf): nil
+      t.gsub!('"', '')
+      return t
   end
 
   def rfc822(value)

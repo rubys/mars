@@ -24,10 +24,10 @@ class HamlFormatter < PlanetFormatter
     out['logo'] = string(f.logo) if f.logo
     out['message'] = string(f.message) if f.message
     out['name'] = string(f.name) if f.name
-    out['rights'] = string(f.rights) if f.rights
-    out['subtitle'] = string(f.subtitle) if f.subtitle
-    out['title'] = string(f.title) if f.title
-    out['title_plain'] = plain(f.title) if f.title
+    out['rights'] = string(f.rights) unless f.rights.size == 0
+    out['subtitle'] = string(f.subtitle) unless f.subtitle.size == 0
+    out['title'] = string(f.title) unless f.title.size == 0
+    out['title_plain'] = plain(f.title) unless f.title.size == 0
     out['url'] = string(f.url) if f.url
     return out
   end
@@ -77,7 +77,7 @@ class HamlFormatter < PlanetFormatter
     out['published_822'] = rfc822(e.published) if e.published
     out['published_iso'] = rfc3399(e.published) if e.published
     out['rights'] = string(e.rights) unless e.rights.size == 0
-    out['source'] = string(e.source) if e.source
+    out['source'] = string(e.source.name) if e.source.name
     out['summary_language'] = string(e.summary_detail.language) if e.summary_detail.language rescue nil
     out['title'] = string(e.title) unless e.title.size == 0
     out['title_language'] = string(e.title_detail.language) if e.title_detail.language rescue nil
@@ -199,10 +199,10 @@ class HamlFormatter < PlanetFormatter
     result << "logo: #{f['logo']}\n" if f['logo']
     result << "message: #{f['message']}\n" if f['message']
     result << "name: #{f['name']}\n" if f['name']
-    result << "rights: #{f['rights']}\n" if f['rights'].length > 0
-    result << "subtitle: #{f['subtitle']}\n" if f['subtitle'].length > 0
-    result << "title: #{f['title']}\n" if f['title'].length > 0
-    result << "title_plain: #{f['title']}\n" if f['title'].length > 0
+    result << "rights: #{f['rights']}\n" if f['rights']
+    result << "subtitle: #{f['subtitle']}\n" if f['subtitle']
+    result << "title: #{f['title']}\n" if f['title']
+    result << "title_plain: #{f['title']}\n" if f['title']
     result << "................................\n\n"
     return result
   end
