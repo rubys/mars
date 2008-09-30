@@ -81,18 +81,15 @@ module Planet
         end
       end
 
-      # remove redundant prefixes and xmlns declarations
-      source.elements.to_a('//*').reverse.each do |element|
-        next if element.prefix.empty?
-        element.elements.to_a('ancestor::*').each do |parent|
-          if parent.attributes['xmlns']
-            if parent.attributes['xmlns'] == element.namespace
-              element.attributes.delete("xmlns:#{element.prefix}")
-              element.prefix = ''
-              element.name = element.name
-            end
-            break
-          end
+      Planet.fix_namespaces source
+
+      # atom:source should not have atom:published as a child. But should
+      # have atom:updated. Some feeds spooge this, so we do the best we can.
+      if source.elements['published']
+        if source.elements['updated']
+          source.delete_element 'published'
+        else
+          source.elements['published'].name = 'updated'
         end
       end
 
@@ -149,6 +146,23 @@ module Planet
       next if name[0..1] == '__'
       child = element.add_element("planet:#{name}")
       child.text = value
+    end
+  end
+
+  def Planet.fix_namespaces elt
+  # remove redundant prefixes and xmlns declarations
+    elt.elements.to_a('//*').reverse.each do |element|
+      next if element.prefix.empty?
+      element.elements.to_a('ancestor::*').each do |parent|
+        if parent.attributes['xmlns']
+          if parent.attributes['xmlns'] == element.namespace
+            p = element.prefix
+            element.prefix = ''
+            element.delete_attribute("xmlns:#{p}")
+          end
+          break
+        end
+      end
     end
   end
 end
