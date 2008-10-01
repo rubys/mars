@@ -8,8 +8,8 @@ class TemplatePublisher
   ALLOWED_TEMPLATES = %w[xslt haml]
 
   def initialize
-    @formatters = { 'haml' => HamlFormatter.new,
-                    'xslt' => XsltFormatter.new }
+    @formatters = { 'haml' => HamlFormatter,
+                    'xslt' => XsltFormatter }
   end
   
   def publish_feed(template_files, feed)
@@ -27,7 +27,7 @@ class TemplatePublisher
         end
 
         # pick the formatter
-        @formatter = @formatters[$2]
+        @formatter = @formatters[$2].new
 
         # process the template
         File.open(File.join(output_dir,$1),'w') do |file|

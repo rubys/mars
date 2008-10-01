@@ -3,7 +3,7 @@ require 'planet/harvest'
 require 'planet/config'
 
 class HamlFormatter < PlanetFormatter
-  begin
+  def initialize
     # http://haml.hamptoncatlin.com/
     require 'haml'
   rescue LoadError
