@@ -44,7 +44,7 @@ module Planet
 
       files.sort!.reverse!
 
-      items = config['items_per_page'].to_i rescue 30
+      items = (config['items_per_page'] or 30).to_i rescue 30
       files[0...items].each do |mtime, name|
         entry = Planet::XmlParser.parse(File.open(name))
         if entry.bozo or !entry.root
