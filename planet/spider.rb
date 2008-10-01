@@ -81,21 +81,6 @@ module Planet
         end
       end
 
-      # remove redundant prefixes and xmlns declarations
-      source.elements.to_a('//*').reverse.each do |element|
-        next if element.prefix.empty?
-        element.elements.to_a('ancestor::*').each do |parent|
-          if parent.attributes['xmlns']
-            if parent.attributes['xmlns'] == element.namespace
-              element.attributes.delete("xmlns:#{element.prefix}")
-              element.prefix = ''
-              element.name = element.name
-            end
-            break
-          end
-        end
-      end
-
       entries.each do |entry|
         # try to find a unique id (TODO: try harder)
         id = entry.elements['id'].text rescue nil

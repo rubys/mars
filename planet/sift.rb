@@ -9,6 +9,7 @@ module Planet
 
     node.elements.each do |child|
       next unless child.namespace == 'http://www.w3.org/2005/Atom'
+      child.attributes.delete("xmlns:#{child.prefix}")
       child.name = child.name # remove prefix
 
       # remove, merge, or allow through duplicate children
