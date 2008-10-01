@@ -49,6 +49,43 @@ module Planet
         end
       end
 
+      # fix title_type, name_type, summary_type, and content_type
+      # per config file
+      Planet.config[sub].each do |name,value|
+        case value
+          when 'text/html'
+            type = 'html'
+          when 'text/plain'
+            type = 'text'
+          when 'application/xhtml+xml'
+            type = 'xhtml'
+          else
+            next
+        end
+        case name
+          when 'title_type'
+            feed.each_element('//entry/title') do |title|
+              title.add_attribute('type') unless title.attributes['type']
+              title.attributes['type'] = type
+            end
+          when 'summary_type'
+            feed.each_element('//entry/summary') do |summary|
+              summary.add_attribute('type') unless summary.attributes['type']
+              summary.attributes['type'] = type
+            end
+          when 'content_type'
+            feed.each_element('//entry/content') do |content|
+              content.add_attribute('type') unless content.attributes['type']
+              content.attributes['type'] = type
+            end
+          when 'name_type'
+            feed.each_element('//entry/author/name') do |auth_name|
+              auth_name.add_attribute('type') unless auth_name.attributes['type']
+              auth_name.attributes['type'] = type
+            end
+          end
+        end
+
       # second set of filters: cardinality, sanitization, dates, and uris
       doc.attributes['xml:base'] = uri
       Planet.sift feed, fido

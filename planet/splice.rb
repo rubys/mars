@@ -89,16 +89,6 @@ module Planet
       source = REXML::Element.new('planet:source') unless source
       Planet.source(sub, source) unless source.has_elements?
 
-      # atom:source should not have atom:published as a child. But should
-      # have atom:updated. Some feeds spooge this, so we do the best we can.
-      if source.elements['child::published']
-        if source.updated
-         source.delete_element source.published 
-        else
-          source.published.name = 'updated'
-        end
-      end
-
       feed.root.add source.root
     end
 
