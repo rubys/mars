@@ -53,15 +53,16 @@ module Planet
       # per config file
       Planet.config[sub].each do |name,value|
         case value
-          when 'text/html'
+          when 'text/html', 'html'
             type = 'html'
-          when 'text/plain'
+          when 'text/plain', 'text'
             type = 'text'
-          when 'application/xhtml+xml'
+          when 'application/xhtml+xml', 'xhtml'
             type = 'xhtml'
           else
             next
         end
+
         case name
           when 'title_type'
             feed.each_element('//entry/title') do |title|
