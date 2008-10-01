@@ -71,10 +71,16 @@ module Planet
       when 'generator'
         make_absolute child, 'uri'
       when 'published', 'updated'
+        # convert dates to RFC 3339
         if child.text
           text = child.texts.map {|t| t.value}.join
           child.children.each {|text_node| text_node.remove}
           child.text = DateTime.parse(text).to_s
+        end
+
+        # at the feed/source level, there is no published element
+        if child.name == 'published' and node.name != 'entry'
+          node.elements['updated'] ? child.remove : child.name = 'updated'
         end
       when 'author', 'email', 'entry', 'feed', 'id', 'name', 'source'
       else
