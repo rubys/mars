@@ -88,7 +88,7 @@ module Planet
         end
 
       # second set of filters: cardinality, sanitization, dates, and uris
-      doc.attributes['xml:base'] = uri
+      doc.attributes['xml:base'] = Planet.config[sub]['xml_base'] ? Planet.config[sub]['xml_base'] : uri
       Planet.sift feed, fido
 
       # process feed attributes: xml* (xml:lang, xml:base, xmlns) will need
