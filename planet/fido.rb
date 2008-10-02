@@ -85,7 +85,7 @@ module Planet
       # issue the request, handling timeout, ssl, etc.
       response = begin
         uri = URI.parse(uri)
-        Timeout::timeout(@timeout) {
+        Timeout::timeout(@timeout, Timeout::Error) {
           http = Net::HTTP::new(uri.host, uri.port)
 
           if uri.scheme == 'https'
