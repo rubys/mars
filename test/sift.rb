@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'planet/xmlparser'
 require 'planet/sift'
 
 class SiftTestCase < Test::Unit::TestCase
@@ -9,6 +10,7 @@ class SiftTestCase < Test::Unit::TestCase
     title = "<title type='html' #{ATOMNS}>&lt;i/&gt;</title>"
     doc = Planet::XmlParser.parse(title)
     Planet.sift doc, nil
-    assert_equal '<i></i>', doc.elements['title/div'].to_a.join
+    div = doc.at('//xhtml:div', 'xhtml' => 'http://www.w3.org/1999/xhtml')
+    assert_equal '<i></i>', div.children.to_a.join
   end
 end

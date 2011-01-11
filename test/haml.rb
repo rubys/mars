@@ -61,6 +61,8 @@ end
 class HamlTestCase < Test::Unit::TestCase
   H_TESTS.flatten.each do |file|
     name = file.split('.').first.split('/')[-3..-1].join('_')
+    debug = (__FILE__ == $0 and not ARGV.empty?)
+    next if debug and not ARGV.include?("test_#{name}")
     define_method "test_#{name}" do
       testdata = open(file).read
 
@@ -68,7 +70,10 @@ class HamlTestCase < Test::Unit::TestCase
         # for .xml files
         when /Description:\s*(.*?)\s*Expect:\s*(.*)\s*/
           desc = TestCaseConverter.python2ruby($2, file)
-          doc = Planet.harvest(file)
+          doc = Planet::Transmogrify.parse(open(file))
+          doc.root['xml:base'] = 'http://example.com/test/'
+          Planet.sift doc.root, nil
+          Planet.add_attrs(doc)
           output = HamlFormatter.new.haml_info(doc)
           channels = output['channels']
           items = output['items'] if output['items']
@@ -77,13 +82,13 @@ class HamlTestCase < Test::Unit::TestCase
         when /Description:\s*(.*?)\s*; Expect:\s*(.*)\s*/
           desc = TestCaseConverter.python2ruby($2, file)
           Planet.config.read file
-          doc = Planet.harvest('test/data/filter/haml/id.xml')
+          doc = Planet.harvest('test/data/filter/haml/id.xml', nil)
           output = HamlFormatter.new.haml_info(doc)
  
           # copy haml hash to environment
           feed = output['feed']
           feedtype = output['feedtype']
-          generator = output['generator_uri']
+          generator = output['generator']
           link = output['link']
           name = output['name']
           owner_email = output['owner_email']
@@ -92,8 +97,14 @@ class HamlTestCase < Test::Unit::TestCase
           raise Exception.new('testcase parse error')
         end
 
-      test_result = eval desc 
-      assert_equal true, test_result, message=desc
+        if debug
+          puts doc
+          puts
+          p output
+        end
+
+      test_result = eval desc rescue nil
+      assert_equal true, test_result, desc
     end
   end
 

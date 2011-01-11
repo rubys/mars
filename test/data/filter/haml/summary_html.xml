@@ -1,6 +1,6 @@
 <!--
 Description:  entity encoded html summary
-Expect:       Items[0]['content'] == 'D&eacute;tente'
+Expect:       Items[0]['content'] == 'D&#xE9;tente'
 -->
 
 <feed xmns="http://www.w3.org/2005/Atom">

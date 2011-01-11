@@ -37,8 +37,9 @@ module Planet
       feed = doc.root || doc
 
       # add in self information
-      if not feed.elements['link[@rel="self"]']
-        link = feed.add_element('link',{'rel'=>'self', 'href'=>uri})
+      if not feed.at('link[@rel="self"]')
+        link = feed.document.create_element('link',{'rel'=>'self', 'href'=>uri})
+        feed.children.first.add_previous_sibling(link)
         if doc.version[0..2] == 'rss'
           link.attributes['type'] == 'application/rss+xml'
         elsif doc.version[0..3] == 'atom'
@@ -88,25 +89,31 @@ module Planet
         end
 
       # second set of filters: cardinality, sanitization, dates, and uris
-      doc.attributes['xml:base'] = Planet.config[sub]['xml_base'] ? Planet.config[sub]['xml_base'] : uri
+      doc.root['xml:base'] ||= Planet.config[sub]['xml_base'] || uri
       Planet.sift feed, fido
 
       # process feed attributes: xml* (xml:lang, xml:base, xmlns) will need
       # need to be transplanted to each entry.  The rest will simply be
       # placed on the source element
       root_attrs = {}
-      source = REXML::Element.new('source')
-      feed.attributes.each_attribute do |attrib|
-        if attrib.expanded_name[0..2] == 'xml'
-          root_attrs[attrib.expanded_name] = attrib.value
+      source = feed.document.create_element('source')
+      feed.attribute_nodes.each do |attrib|
+        if attrib.namespace
+          expanded_name = "#{attrib.namespace.prefix}:#{attrib.name}"
         else
-          source.attributes[attrib.expanded_name] = attrib.value
+          expanded_name = attrib.name
+        end
+
+        if expanded_name[0..2] == 'xml'
+          root_attrs[expanded_name] = attrib.value
+        else
+          source.attributes[expanded_name] = attrib.value
         end
       end
 
       # add in configuration information (names, hackergotchi icons...)
-      source.add_namespace 'planet', 'http://planet.intertwingly.net/'
       Planet.source(sub, source)
+      source.add_namespace 'planet', 'http://planet.intertwingly.net'
 
       # process feed elements: entries will be captured for later processing,
       # other elements will be transplanted to the source element.
@@ -115,30 +122,30 @@ module Planet
         if element.name == 'entry'
           entries << element
         else
-          source.add_element(element)
+          source.add_child(element)
         end
       end
 
       entries.each do |entry|
         # try to find a unique id (TODO: try harder)
-        id = entry.elements['id'].text rescue nil
-        id ||= entry.elements['link[@rel="alternate"]/@href'] rescue nil
+        id = entry.at('id').text rescue nil
+        id ||= entry.at('./link[@rel="alternate"]/@href') rescue nil
         next unless id
 
         unless /^\w+\:/ =~ id
           id = 'urn:feed-entry-id:' + id
-          entry.elements['id'].text = id
+          entry.at('id').text = id
         end
 
         # determine output file name for this entry
         entry_file = File.join(entry_cache, Planet.filename(id))
 
         # determine updated date
-        updated = entry.elements['updated']
+        updated = entry.at('updated')
         if not updated
-          updated = entry.add_element('updated')
-          if entry.elements['published']
-            updated.text = entry.elements['published'].text
+          updated = entry.add_child(entry.document.create_element('updated'))
+          if entry.at('published')
+            updated.content = entry.at('published').text
           elsif File.exist? entry_file
             updated.text=File.stat(entry_file).mtime.iso8601
           else
@@ -148,20 +155,21 @@ module Planet
 
         # augment with feed xml* attributes and source information
         root_attrs.each_pair {|name,value| entry.attributes[name]=value}
-        entry.add(source) if not entry.elements['source']
+        entry.add_child(source) if not entry.at('source')
 
         # output the entry, with a timestamp reflecting the update time
-        File.open(entry_file, 'w') { |file| REXML::Formatters::Default.new.write(entry, file) }
+        File.open(entry_file, 'w') { |file| file.write entry.to_s }
         updated = Time.parse(updated.text)
         File.utime updated, updated, entry_file
       end
 
       # write source information out to the cache
       if feed.name == 'feed'
+        source.add_namespace nil, 'http://www.w3.org/2005/Atom'
         source.name = 'planet:source'
         root_attrs.each_pair {|name,value| source.attributes[name]=value}
         source_file = File.join(source_cache, Planet.filename(sub))
-        File.open(source_file, 'w') { |file| REXML::Formatters::Default.new.write(source, file) }
+        File.open(source_file, 'w') { |file| file.write source.to_s }
       end
     end
   end
@@ -170,8 +178,9 @@ module Planet
   def Planet.source sub, element
     Planet.config[sub].each do |name,value|
       next if name[0..1] == '__'
-      child = element.add_element("planet:#{name}")
+      child = element.document.create_element("planet:#{name}")
       child.text = value
+      element.add_child(child)
     end
   end
 end

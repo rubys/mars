@@ -1,3 +1,5 @@
+require 'rubygems'
+
 Dir['test/*.rb'].each {|test| require test}
 
 begin

@@ -1,6 +1,6 @@
 <!--
 Description:  xhtml content
-Expect:       Items[0]['content'] == '<img src="x.jpg" />'
+Expect:       Items[0]['content'] == '<img src="http://example.com/test/x.jpg"/>'
 -->
 
 <feed xmlns="http://www.w3.org/2005/Atom">

@@ -2,10 +2,10 @@ require 'planet/transmogrify'
 require 'planet/sift'
 
 module Planet
-  def Planet.harvest source
+  def Planet.harvest source, fido
     doc = Planet::Transmogrify.parse(open(source))
-    doc.attributes['xml:base'] = source
-
+    doc.root['xml:base'] = source
+    Planet.sift doc.root, fido
     Planet.add_attrs(doc)
   end
 
@@ -18,7 +18,7 @@ module Planet
 
     # Anchor the dynamic dictionaries
     doc.feed = Feed.new(doc.root)
-    doc.entries = doc.root.elements.to_a('entry').map {|entry| Entry.new(entry)}
+    doc.entries = doc.root.search('entry').map {|entry| Entry.new(entry)}
 
     doc
   end
@@ -28,7 +28,7 @@ module Planet
     attr_accessor :node
 
     def initialize node
-      @node = node || REXML::Element.new('')
+      @node = node || XmlParser.parse('')
     end
 
     def [](index)
@@ -39,8 +39,8 @@ module Planet
     def UserDict.text_element *names
       names.each do |name|
         define_method name do
-          element = @node.elements[name.to_s]
-          element ? element.texts.map {|t| t.value}.join : nil
+          element = @node.at(name) if @node
+          element ? element.text : nil
         end
       end
     end
@@ -49,7 +49,7 @@ module Planet
     def UserDict.element_attr *names
       names.each do |name|
         define_method name do
-          @node.attributes[name.to_s]
+          @node[name.to_s]
         end
       end
     end
@@ -58,8 +58,8 @@ module Planet
     def UserDict.reluri_attr *names
       names.each do |name|
         define_method name do
-          value = @node.attributes[name.to_s]
-          value = Planet.uri_norm(@node.xmlbase, value) if value
+          value = @node[name.to_s]
+          value = Planet.uri_norm(@node.base_uri, value) if value
           value
         end
       end
@@ -69,11 +69,11 @@ module Planet
     def UserDict.text_construct *names
       names.each do |name|
         define_method name do
-          TextConstruct.new(@node.elements[name.to_s]).value
+          TextConstruct.new(@node.at(name)).value
         end
 
         define_method name.to_s + "_detail" do
-          TextConstruct.new(@node.elements[name.to_s])
+          TextConstruct.new(@node.at(name.to_s))
         end
       end
     end
@@ -89,19 +89,21 @@ module Planet
     text_construct :title
 
     def link
-      links.select {|link| link.rel=='alternate'}.first.href rescue nil
+      alternate = links.find {|link| link.rel=='alternate'}
+      alternate ? alternate.href : nil
     end
 
     def links
-      @node.elements.to_a('link').map {|node| Link.new(node)}
+      @node.search('link').map {|node| Link.new(node)}
     end
 
     def license
-      links.select {|link| link.rel=='license'}.first.href rescue nil
+      link = links.first {|link| link.rel=='license'}
+      link ? link.href : nil
     end
 
     def tags
-      @node.elements.to_a('category').map {|node| Category.new(node)}
+      @node.search('category').map {|node| Category.new(node)}
     end
 
     def categories
@@ -112,8 +114,12 @@ module Planet
       tags.first.term rescue nil
     end
 
+    def authors
+      @node.search('author').map {|node| Author.new(node)}
+    end
+
     def contributors
-      @node.elements.to_a('contributor').map {|node| Author.new(node)}
+      @node.search('contributor').map {|node| Author.new(node)}
     end
 
     def author
@@ -121,7 +127,7 @@ module Planet
     end
 
     def author_detail
-      Author.new(@node.elements['author'])
+      Author.new(@node.at('author'))
     end
 
     alias :publisher :author
@@ -140,26 +146,31 @@ module Planet
     end
 
     def generator_detail
-      Generator.new(@node.elements['generator'])
+      Generator.new(@node.at('generator'))
     end
 
     def message
-      element = @node.elements['planet:message']
-      element ? element.texts.map {|t| t.value}.join : nil
+      ns = {'planet' => 'http://planet.intertwingly.net/'}
+      element = @node.at('//planet:message', ns)
+      element ? element.text : nil
     end
 
     def name
-      element = @node.elements['planet:name']
-      element ? element.texts.map {|t| t.value}.join : nil
+      ns = {'planet' => 'http://planet.intertwingly.net/'}
+      element = @node.at('//planet:name', ns)
+      element ? element.text : nil
     end
     
     def sources
-      @node.elements.to_a('planet:source').map {|node| Feed.new(node)}
+      ns = {'planet' => 'http://planet.intertwingly.net/'}
+      @node.search('//planet:source', ns).map {|node| Feed.new(node)}
     end
     
     def url
-      links.select {|link| link.rel=='self'}.first.href rescue nil
+      link = links.first {|link| link.rel=='self'}
+      link ? link.href : nil
     end
+    alias :href :url
   end
 
   class Entry < CommonElements
@@ -168,7 +179,7 @@ module Planet
     alias :description :summary
 
     def content
-      @node.elements.to_a('content').map {|node| TextConstruct.new(node)}
+      @node.search('content').map {|node| TextConstruct.new(node)}
     end
 
     def enclosure_href
@@ -198,28 +209,26 @@ module Planet
     end
 
     def source
-      Feed.new(@node.elements['source'])
+      Feed.new(@node.at('source'))
     end
   end
 
   class TextConstruct < UserDict
-    require 'html5'
-    require 'html5/treewalkers'
-    require 'html5/serializer'
-
-    REXML_TREEWALKER = HTML5::TreeWalkers['rexml']
-
     element_attr :src
 
     def value
-      case @node.attributes['type']
+      case @node['type']
         when 'xhtml'
-          serialize(@node.elements[1].to_a).strip
+          if @node.elements.length == 1 and node.elements.first.name == 'div'
+            serialize(@node.elements.first.children).strip
+          else
+            serialize(@node.children).strip
+          end
         when 'text', nil, /^text\//i
-          (@node.text || '').strip
+          @node.text.to_s.strip
         when 'html'
-          text = @node.text.strip rescue ''
-          serialize HTML5.parse_fragment(text, :encoding => 'UTF-8')
+          text = @node.text.strip
+          serialize Planet::XmlParser.fragment(text).children
         when /\+xml$/i, /\/xml$/i
           @node.to_a.to_s.strip
         else
@@ -229,7 +238,7 @@ module Planet
     end
 
     def type
-      case @node.attributes['type']
+      case @node['type']
         when 'xhtml'
           'application/xhtml+xml'
         when 'text', nil
@@ -237,44 +246,23 @@ module Planet
         when 'html'
           'text/html'
         else
-          @node.attributes['type']
+          @node['type']
       end
     end
 
     def base
-      url_norm(@node.xmlbase)
+      url_norm(@node.base_uri)
     end
 
     def language
-      @node.attributes['xml:lang']
+      @node['lang']
     end
 
   private
 
     # DOM to string
     def serialize nodes
-      nodes.map { |node|
-        # resolve relative URIs
-        if node.respond_to? :attributes
-          if !node.parent.parent
-            node.parent.attributes['xml:base'] ||= @node.xmlbase
-          end
-          resolve node if node.respond_to? :attributes
-        end
-
-        HTML5::XHTMLSerializer.serialize(REXML_TREEWALKER.new(node))
-      }.join
-    end
-
-    # resolve relative URIs
-    def resolve element
-      element.attributes.each do |name,value|
-        if %w(href).include? name
-          element.attributes[name] =
-            Planet.uri_norm(element.xmlbase, value)
-        end
-      end
-      element.each_element { |child| resolve child }
+      nodes.map { |node| node.to_s }.join
     end
   end
 
@@ -282,9 +270,9 @@ module Planet
     text_element :name, :email, :uri
 
     def uri
-      value = @node.elements['uri']
+      value = @node.at('uri')
       if value
-        value = Planet.uri_norm(value.xmlbase, value.text)
+        value = Planet.uri_norm(value.base_uri, value.text)
       end
       value
     end
@@ -308,11 +296,11 @@ module Planet
     alias :url :href
 
     def rel
-      @node.attributes['rel'] or 'alternate'
+      @node['rel'] or 'alternate'
     end
 
     def type
-      @node.attributes['type'] or (rel=='self' ? 'application/atom+xml' : nil)
+      @node['type'] or (rel=='self' ? 'application/atom+xml' : nil)
     end
   end
 

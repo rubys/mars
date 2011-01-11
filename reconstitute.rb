@@ -1,3 +1,4 @@
+require 'rubygems'
 require 'fileutils'
 require 'planet/config'
 require 'planet/harvest'
@@ -8,6 +9,12 @@ require 'planet/splice'
 base = File.dirname(File.expand_path(__FILE__))
 work = File.join(base, 'test', 'work', 'reconstitute')
 FileUtils.mkdir_p work
+
+# schedule cleanup
+at_exit do
+  FileUtils.rmtree work
+  FileUtils.remove_dir File.dirname(work)
+end
 
 # skeleton config
 config = Planet.config
@@ -22,10 +29,11 @@ ARGV.each {|sub| config[sub] = {'__name__' => sub}}
 Planet.spider
 
 # fill in the rest of the configuration
+
 Dir[File.join(work, 'cache', 'source', '*')].each do |source|
   source = Planet.harvest(source)
   config['Planet']['name'] = source.feed.title
-  config['Planet']['link'] = source.feed.link
+  config['Planet']['link'] = source.feed.link if source.feed.link =~ /^\w+:/
   config['Planet']['owner_name'] = source.feed.author_detail.name
   config['Planet']['owner_email'] = source.feed.author_detail.email
 end
@@ -35,7 +43,3 @@ Planet.splice
 
 # output feed
 puts open(File.join(work, 'output', 'atom.xml')).read
-
-# cleanup
-FileUtils.rmtree work
-FileUtils.remove_dir File.dirname(work)

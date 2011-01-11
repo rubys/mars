@@ -26,8 +26,8 @@ class HamlFormatter < PlanetFormatter
     out['name'] = string(f.name) if f.name
     out['rights'] = string(f.rights) unless f.rights.size == 0
     out['subtitle'] = string(f.subtitle) unless f.subtitle.size == 0
-    out['title'] = string(f.title) unless f.title.size == 0
-    out['title_plain'] = plain(f.title) unless f.title.size == 0
+    out['title'] = html(f.title_detail) unless f.title.size == 0
+    out['title_plain'] = plain(f.title_detail) unless f.title.size == 0
     out['url'] = string(f.url) if f.url
     return out
   end
@@ -50,13 +50,12 @@ class HamlFormatter < PlanetFormatter
     out['channel_logo'] = string(e.source.logo) if e.source.logo
     out['channel_message'] = string(e.source.message) if e.source.message
     out['channel_name'] = string(e.source.name) if e.source.name
-    out['channel_rights'] = string(e.source.rights) unless e.source.rights.size == 0
-    out['channel_subtitle'] = string(e.source.subtitle) unless e.source.subtitle.size == 0
-    out['channel_title'] = string(e.source.title) unless e.source.title.size == 0
-    out['channel_title_plain'] = plain(e.source.title) unless e.source.title.size == 0
-    out['content'] = string(e.description) if e.description.size != 0
-    out['content'] = string(e.summary[0].value) if e.summary[0].value rescue nil
-    out['content'] = string(e.content[0].value) if e.content[0].value rescue nil
+    out['channel_rights'] = string(e.source.rights) if e.source.rights
+    out['channel_subtitle'] = string(e.source.subtitle) if e.source.subtitle
+    out['channel_title'] = html(e.source.title_detail) if e.source.title
+    out['channel_title_plain'] = plain(e.source.title_detail) if e.source.title
+    out['content'] = html(e.summary_detail) if e.summary_detail
+    out['content'] = html(e.content[0]) if e.content[0]
     out['content_language'] = string(e.content[0].language) if e.content[0].language rescue nil
     out['date'] = planet_date(e.published) if e.published
     out['date'] = planet_date(e.updated) if e.updated
@@ -64,7 +63,7 @@ class HamlFormatter < PlanetFormatter
     out['date_822'] = rfc822(e.updated) if e.updated
     out['date_iso'] = rfc3399(e.published) if e.published 
     out['date_iso'] = rfc3399(e.updated) if e.updated
-    out['description'] = string(e.description) if e.description.size != 0
+    out['description'] = string(e.description) if e.description
     out['enclosure_href'] = string(e.enclosure_href) if e.enclosure_href
     out['enclosure_length'] = string(e.enclosure_length) if e.enclosure_length
     out['enclosure_type'] = string(e.enclosure_type) if e.enclosure_type
@@ -76,12 +75,12 @@ class HamlFormatter < PlanetFormatter
     out['published'] = planet_date(e.published) if e.published
     out['published_822'] = rfc822(e.published) if e.published
     out['published_iso'] = rfc3399(e.published) if e.published
-    out['rights'] = string(e.rights) unless e.rights.size == 0
+    out['rights'] = string(e.rights) if e.rights
     out['source'] = string(e.source.name) if e.source.name
     out['summary_language'] = string(e.summary_detail.language) if e.summary_detail.language rescue nil
-    out['title'] = string(e.title) unless e.title.size == 0
+    out['title'] = html(e.title_detail) if e.title
     out['title_language'] = string(e.title_detail.language) if e.title_detail.language rescue nil
-    out['title_plain'] = plain(e.title) unless e.title.size == 0
+    out['title_plain'] = plain(e.title_detail) if e.title
     out['updated'] = planet_date(e.updated) if e.updated
     out['updated_822'] = rfc822(e.updated) if e.updated
     out['updated_iso'] = rfc3399(e.updated) if e.updated
@@ -95,7 +94,7 @@ class HamlFormatter < PlanetFormatter
 
     # Add feed and items attributes using harvest
     doc = Planet.add_attrs(source)
-    doc.attributes['xml:base'] = 'http://127.0.0.1:8097/'
+    doc['xml:base'] = 'http://127.0.0.1:8097/'
 
     # apply mapping rules to convert harvest UserDict to haml input
     output = {'channels' => [], 'items' => []}

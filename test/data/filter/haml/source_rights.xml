@@ -1,6 +1,6 @@
 <!--
 Description:  source rights
-Expect:       Channels[0]['rights'] == '&copy; 2006' and Items[0]['channel_rights'] == '&copy; 2006'
+Expect:       Channels[0]['rights'] == '&#xA9; 2006' and Items[0]['channel_rights'] == '&#xA9; 2006'
 -->
 
 <feed xmlns="http://www.w3.org/2005/Atom">
